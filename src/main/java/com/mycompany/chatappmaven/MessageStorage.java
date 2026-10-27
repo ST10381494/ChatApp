@@ -2,27 +2,51 @@ package com.mycompany.chatappmaven;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 
 public class MessageStorage {
 
-    // I researched how to save a file using Gson library.
+    private static final String FILE_PATH = "messages.json";
+    // I researched Gson to handle JSON files.
     // Reference: Google, "Gson User Guide", 2024.
+    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+    // Saves a new message to the JSON file
     public void saveMessage(Message msg) {
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        
-        try {
-            // open the file to write (append)
-            FileWriter writer = new FileWriter("messages.json", true);
-            
-            // convert message object to JSON and write
-            gson.toJson(msg, writer);
-            writer.write("\n"); // add a new line for the next message
-            writer.close();
-            
+        ArrayList<Message> currentList = loadStoredMessages();
+        currentList.add(msg);
+        writeToFile(currentList);
+    }
+
+    // Rewrites the entire file (used when deleting a message)
+    public void rewriteStoredMessages() {
+        writeToFile(Message.storedMessages);
+    }
+
+    // Reads the JSON file and returns the list of messages
+    public ArrayList<Message> loadStoredMessages() {
+        try (Reader reader = new FileReader(FILE_PATH)) {
+            Type listType = new TypeToken<ArrayList<Message>>() {}.getType();
+            ArrayList<Message> messages = gson.fromJson(reader, listType);
+            return messages != null ? messages : new ArrayList<>();
         } catch (IOException e) {
-            System.out.println("Error saving file: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    // Helper method to write the list to the file
+    private void writeToFile(ArrayList<Message> list) {
+        try (Writer writer = new FileWriter(FILE_PATH)) {
+            gson.toJson(list, writer);
+        } catch (IOException e) {
+            System.out.println("Error saving to JSON: " + e.getMessage());
         }
     }
 }
